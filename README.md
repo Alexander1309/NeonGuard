@@ -54,7 +54,6 @@ NeonGuard/
   - `WebServer`
   - `Preferences`
   - `ArduinoJson`
-
 ---
 
 ## 🔧 Cómo usar
@@ -76,10 +75,42 @@ NeonGuard/
 {
   "puls": 78,
   "oxigenacion": 98,
-  "promedio": 40%,
-  "anomalia": 45%
+  "promedio": 40,
+  "anomalia": 45
 }
 ```
+
+---
+
+### 📊 Tabla de Predicción de Anomalías en NeonGuard
+
+| 💡 Criterio Evaluado                       | Condición Detectada                             | % Asignado | Explicación Técnica                                                                 |
+|-------------------------------------------|--------------------------------------------------|------------|--------------------------------------------------------------------------------------|
+| 🔺 **Movimiento brusco** (FSR)            | Cambio súbito de presión > 180                   | +15%       | Indicador de espasmos, sobresaltos, caídas o sueño agitado                           |
+| 💤 **Inactividad prolongada** (FSR)       | Sin cambios de presión por 5 ciclos (~10s)       | +20%       | Posible apnea, muerte de cuna o pérdida de conciencia                               |
+| ⚖️ **Distribución anormal** (FSR)        | Solo 1 sensor activo o todos en 0                | +10–25%    | Postura errática, abandono de cama o desconexión de sensores                        |
+| ❤️ **Frecuencia cardíaca anormal** (BPM) | BPM < 50 o BPM > 180                             | +25%       | Bradicardia o taquicardia, riesgos de paro o crisis cardíaca                        |
+| 🫁 **Oxigenación baja** (SpO₂)           | SpO₂ < 92%                                       | +30%       | Hipoxemia crítica; puede preceder eventos de apnea o paro respiratorio              |
+
+### 🔢 Ejemplo de cálculo de anomalía
+
+| Parámetro              | Valor Detectado     | ¿Cumple Condición? | % Asignado |
+|------------------------|----------------------|---------------------|-------------|
+| Movimiento brusco      | Sensor 2 cambió 210  | ✅                  | 15%         |
+| Inactividad            | 5 ciclos sin cambio  | ✅                  | 20%         |
+| Presión desbalanceada  | Solo sensor 3 > 30   | ✅                  | 10%         |
+| BPM                    | 43 BPM               | ✅                  | 25%         |
+| SpO₂                   | 91%                  | ✅                  | 30%         |
+| **Total estimado**     |                      |                     | **100%**    |
+
+### 📘 Interpretación de puntuaciones
+
+| Porcentaje (%) | Nivel de riesgo              | Posibles causas                                                   |
+|----------------|------------------------------|--------------------------------------------------------------------|
+| 0–25%          | 🟢 Normal                    | Variaciones naturales del sueño                                   |
+| 26–50%         | 🟡 Leve                      | Movimiento leve o inicio de irregularidad                         |
+| 51–75%         | 🟠 Moderado                  | Apnea leve, postura anómala, oxigenación baja moderada            |
+| 76–100%        | 🔴 Crítico                   | Paro respiratorio, apnea severa, muerte súbita, caída, desconexión |
 
 ---
 
