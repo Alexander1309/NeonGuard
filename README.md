@@ -36,6 +36,7 @@ NeonGuard/
 
 ### Instituto Tecnológico Superior de Monclova
 
+![Logo Tec](./img/LogoTecNm.svg)
 ![Logo Tec](./img/LogoTecNmCm.svg)
 
 ### Proyecto NeonGuard
@@ -88,24 +89,24 @@ NeonGuard/
 
 ---
 
-## 👤 Autor
+## 👤 Desarolladores
 
 Desarrollado por el equipo de **NeonGuard**  
 Instituto Tecnológico Superior de Monclova
 
 ### 👨‍💻 Programador
 
-- Alexander Uriel Torres Pérez
+- [Alexander Uriel Torres Pérez](https://www.facebook.com/share/1BvaWjtfng/)
 
 ### 🎨 Diseñador y modelador
 
-- Luis Ángel Córdova Ceniceros
+- [Luis Ángel Córdova Ceniceros](https://www.facebook.com/luis.cordova.79462815)
 
-### 🔌 Electrónico
+### 🔌 Eléctrico
 
-- Pablo Emiliano Sánchez Campos
+- [Pablo Emiliano Sánchez Campos](https://www.facebook.com/pablo.sanchez.251275)
 
 ### 👩‍💼 Administradoras
 
-- Aranza Dalay Vidrio Vásquez
-- Xitlalic Jacqueline García Saldaña
+- [Aranza Dalay Vidrio Vásquez](https://www.facebook.com/share/16NrDxJBV5/)
+- [Xitlalic Jacqueline García Saldaña](https://www.facebook.com/share/1HsM3pJrV9/)
