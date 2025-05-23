@@ -1,3 +1,4 @@
+#include "HardwareSerial.h"
 #ifndef WIFIMANAGERSERVER_H
 #define WIFIMANAGERSERVER_H
 
@@ -7,13 +8,14 @@
 
 #define SSID_APT "NeonGuard_Config"
 #define PASS_APT "12345678"
+#define PIN_BOTON_RESET 4  // GPIO usado como botón tipo pull-down
 
 class WiFiManagerServer {
 public:
   WiFiManagerServer() {}
 
   void iniciarWiFi() {
-    manejarReinicios();
+    pinMode(PIN_BOTON_RESET, INPUT);  // Botón pull-down
 
     WiFiManager wifiManager;
 
@@ -23,9 +25,10 @@ public:
       ESP.restart();
     }
 
+    ipGateway = WiFi.localIP().toString();
     Serial.println("✅ Conectado a WiFi");
     Serial.print("📡 IP local: ");
-    Serial.println(WiFi.localIP());
+    Serial.println(ipGateway);
 
     Preferences preferences;
     preferences.begin("wifi", false);
@@ -55,48 +58,40 @@ public:
         resetearCredenciales();
       }
     }
+
+    verificarBoton();
   }
 
 private:
-  void manejarReinicios() {
-    Preferences prefs;
-    prefs.begin("boot", false);
+  unsigned long tiempoPresionado = 0;
+  bool enEspera = false;
 
-    unsigned long lastBoot = prefs.getULong("lastBootTime", 0);
-    int bootCount = prefs.getInt("bootCount", 0);
-    unsigned long now = millis() / 1000;  // Segundos desde arranque
-
-    // Si el último boot fue hace menos de 30 segundos, contar como reinicio rápido
-    if (now - lastBoot < 30) {
-      bootCount++;
+  void verificarBoton() {
+    if (digitalRead(PIN_BOTON_RESET) == HIGH) {
+      if (!enEspera) {
+        tiempoPresionado = millis();
+        enEspera = true;
+      } else if (millis() - tiempoPresionado >= 5000) {
+        Serial.println("🧼 Botón mantenido 5s. Borrando configuración...");
+        resetearCredenciales();
+      }
     } else {
-      bootCount = 1; // Resetear si ha pasado mucho tiempo
-    }
-
-    prefs.putULong("lastBootTime", now);
-    prefs.putInt("bootCount", bootCount);
-    prefs.end();
-
-    if (bootCount >= 3) {
-      Serial.println("⚠️ Reinicio rápido x3 detectado. Borrando credenciales...");
-      resetearCredenciales();
+      enEspera = false;
+      tiempoPresionado = 0;
     }
   }
 
   void resetearCredenciales() {
     Serial.println("🧹 Borrando redes guardadas y preferencias...");
 
-    // Borrar configuración WiFi
     WiFiManager wifiManager;
     wifiManager.resetSettings();
 
-    // Borrar preferencias
     Preferences preferences;
     preferences.begin("wifi", false);
     preferences.clear();
     preferences.end();
 
-    // También limpiar el contador de reinicios
     preferences.begin("boot", false);
     preferences.clear();
     preferences.end();

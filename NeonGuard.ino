@@ -3,12 +3,14 @@
 #include "LocalAPReceiver.h"
 #include "InternetAPIServer.h"
 #include "ForceSensor.h"
+#include "LedController.h"
 
 // Instancias
+LedController led(2);
+ForceSensor sensores;
 WiFiManagerServer wifiManager;
 LocalAPReceiver apReceiver;
-InternetAPIServer internetAPI;
-ForceSensor sensores;
+InternetAPIServer internetAPI(sensores, led);
 
 bool conectadoInternet = false;
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
@@ -16,6 +18,7 @@ unsigned long tiempoAnterior = 0;
 const unsigned long intervaloLectura = 2000;
 
 void tareaWiFiInternet(void* parameter) {
+  led.tresDestellos();
   wifiManager.iniciarWiFi();
   wifiManager.mostrarCredencialesGuardadas();
 
@@ -29,6 +32,7 @@ void tareaWiFiInternet(void* parameter) {
 
   while (true) {
     internetAPI.escuchar();  // Mantenemos el servidor corriendo
+    led.encender();
     delay(10);               // Pequeño delay para evitar saturación
   }
 }
@@ -45,6 +49,7 @@ void tareaRedLocal(void* parameter) {
       break;
     }
 
+    led.tresDestellos();
     Serial.println("[Core 1] Esperando conexión a Internet...");
     delay(1000);
   }
@@ -60,6 +65,7 @@ void tareaRedLocal(void* parameter) {
 void setup() {
   Serial.begin(115200);
   sensores.begin();
+  led.iniciar();
   delay(1000);
 
   xTaskCreatePinnedToCore(
@@ -82,6 +88,7 @@ void setup() {
 }
 
 void loop() {
+  led.actualizar();
   wifiManager.escucharSerialParaReset();
 
   if (conectadoInternet && (millis() - tiempoAnterior >= intervaloLectura)) {

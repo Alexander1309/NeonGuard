@@ -1,8 +1,11 @@
+#ifndef FORCESENSOR_H
+#define FORCESENSOR_H
+
 #include <Preferences.h>
 
 class ForceSensor {
 private:
-  const uint8_t sensorPins[4] = { 34, 35, 32, 33 };
+  const uint8_t sensorPins[4] = { 32, 33, 34, 35 };
   int sensorValues[4];
   int previousValues[4];
   int offsets[4];
@@ -142,3 +145,5 @@ private:
     }
   }
 };
+
+#endif

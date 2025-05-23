@@ -18,7 +18,8 @@ NeonGuard/
 ├── WiFiManagerServer.h         # Manejo de conexión Wi-Fi y credenciales almacenadas
 ├── InternetAPIServer.h         # Servidor HTTP en modo conectado a Internet
 ├── LocalAPReceiver.h           # Servidor local (Access Point) para modo sin red externa
-├── GlobalData.h / .cpp         # Variables compartidas entre módulos y configuración global
+├── LedController.h             # Control del LED RGB según estado del sistema
+├── GlobalData.h / GlobalData.cpp # Variables compartidas entre módulos y configuración global
 ```
 
 ---
@@ -27,9 +28,10 @@ NeonGuard/
 
 - ✅ Auto-conexión a redes Wi-Fi guardadas (WiFiManager)
 - 🔁 Cambio automático a red local si no hay internet
-- 💾 Detección de 3 reinicios rápidos para borrar credenciales
+- 💾 Borrado de credenciales manteniendo presionado un botón por 5 segundos
 - 🧪 Recepción de datos vía POST JSON en modo AP
 - 🌐 API REST disponible vía `/estado`
+- 🛠️ Calibración remota vía `/calibrar` con feedback visual
 
 ---
 
@@ -54,6 +56,7 @@ NeonGuard/
   - `WebServer`
   - `Preferences`
   - `ArduinoJson`
+
 ---
 
 ## 🔧 Cómo usar
@@ -62,7 +65,33 @@ NeonGuard/
 2. Si no hay Wi-Fi configurado, se crea una red llamada `NeonGuard_Config`.
 3. Ingresa desde tu celular o PC, y configura el Wi-Fi.
 4. Si el sistema no detecta internet después de 60 segundos, cambia automáticamente a modo local (Access Point).
-5. Si apagas y prendes el dispositivo **3 veces seguidas**, se borrarán las credenciales y reiniciará la configuración.
+5. Para borrar las credenciales Wi-Fi, **mantén presionado el botón de reset durante 5 segundos**.
+
+---
+
+## 🎯 Calibración de la sábana inteligente
+
+### 🧼 Paso a paso para calibrar correctamente:
+
+1. **Preparación:** Asegúrate de que la sábana esté completamente extendida, limpia y sin ningún objeto ni presión.
+2. **Encendido:** Conecta el ESP32 y espera a que se muestre la IP local en el monitor serie, por ejemplo: `📡 IP local: 192.168.1.108`
+3. **Accede al navegador:** En un dispositivo conectado a la misma red, entra a:
+
+   ```
+   http://<IP_DEL_ESP32>/calibrar
+   ```
+   Ejemplo: `http://192.168.1.108/calibrar`
+
+4. **Efecto visual:** El LED comenzará a parpadear lentamente 🟦 indicando que la calibración está en proceso.
+5. **Confirmación:** Verás en el navegador la respuesta:
+
+   ```json
+   {
+     "status": "✅ Calibración iniciada correctamente."
+   }
+   ```
+
+6. **Listo:** La sábana estará lista para usarse. Puedes ahora colocar al bebé y comenzar el monitoreo.
 
 ---
 
@@ -117,11 +146,11 @@ NeonGuard/
 ## 🧪 Borrar credenciales manualmente
 
 - Puedes enviar `-1` por el monitor serial para reiniciar la configuración Wi-Fi.
-- O apagar/encender la ESP32 3 veces rápidamente para borrado automático.
+- O mantener presionado el botón de reinicio por **5 segundos** para restaurar ajustes de red.
 
 ---
 
-## 👤 Desarolladores
+## 👤 Desarrolladores
 
 Desarrollado por el equipo de **NeonGuard**  
 Instituto Tecnológico Superior de Monclova
