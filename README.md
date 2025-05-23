@@ -77,7 +77,7 @@ NeonGuard/
   "puls": 78,
   "oxigenacion": 98,
   "promedio": 40%,
-  "anomalia": 45%,
+  "anomalia": 45%
 }
 ```
 
