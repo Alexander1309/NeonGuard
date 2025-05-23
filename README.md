@@ -75,8 +75,9 @@ NeonGuard/
 ```json
 {
   "puls": 78,
-  "movimiento": true,
-  "oxigenacion": 98
+  "oxigenacion": 98,
+  "promedio": 40%,
+  "anomalia": 45%,
 }
 ```
 
