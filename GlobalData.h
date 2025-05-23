@@ -2,7 +2,8 @@
 #define GLOBALDATA_H
 
 extern int puls;
-extern bool movimiento;
 extern int oxigenacion;
+extern int promedio;
+extern int anomalia;
 
 #endif

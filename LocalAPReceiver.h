@@ -41,13 +41,7 @@ class LocalAPReceiver {
           }
 
           puls = doc["puls"];
-          movimiento = doc["movimiento"];
           oxigenacion = doc["oxigenacion"];
-
-          Serial.println("❤️ Ritmo cardiaco: " + String(puls));
-          Serial.println("🛌 Movimiento: " + String(movimiento ? "Sí" : "No"));
-          Serial.println("🩸 Oxigenación: " + String(oxigenacion) + "%");
-
           server.send(200, "text/plain", "Datos recibidos correctamente");
         } else {
           server.send(400, "text/plain", "No se enviaron datos");

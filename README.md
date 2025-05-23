@@ -13,11 +13,12 @@ Este sistema permite registrar y visualizar en tiempo real los signos vitales de
 
 ```
 NeonGuard/
-├── NeonGuard.ino
-├── WiFiManagerServer.h         # Manejo de conexión Wi-Fi y credenciales
-├── InternetAPIServer.h         # Servidor HTTP para modo Internet
-├── LocalAPReceiver.h           # Servidor en modo Access Point (modo local)
-├── GlobalData.h / .cpp         # Variables compartidas
+├── NeonGuard.ino               # Archivo principal, coordinación de tareas y sensores
+├── ForceSensor.h               # Lectura de sensores FSR, análisis de sueño y anomalías
+├── WiFiManagerServer.h         # Manejo de conexión Wi-Fi y credenciales almacenadas
+├── InternetAPIServer.h         # Servidor HTTP en modo conectado a Internet
+├── LocalAPReceiver.h           # Servidor local (Access Point) para modo sin red externa
+├── GlobalData.h / .cpp         # Variables compartidas entre módulos y configuración global
 ```
 
 ---

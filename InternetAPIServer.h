@@ -14,8 +14,9 @@ class InternetAPIServer {
       server.on("/estado", HTTP_GET, [this]() {
         StaticJsonDocument<128> doc;
         doc["puls"] = puls;
-        doc["movimiento"] = movimiento;
         doc["oxigenacion"] = oxigenacion;
+        doc["promedio"] = promedio;
+        doc["anomalia"] = anomalia;
 
         String jsonResponse;
         serializeJson(doc, jsonResponse);
