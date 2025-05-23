@@ -37,7 +37,7 @@ NeonGuard/
 ### Instituto Tecnológico Superior de Monclova
 
 ![Logo Tec](./img/LogoTecNm.svg)
-![Logo Tec](./img/LogoTecNmCm.svg)
+![Logo Tec](./img/LogoTecNmCm.png)
 
 ### Proyecto NeonGuard
 
