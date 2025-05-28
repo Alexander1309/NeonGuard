@@ -1,11 +1,6 @@
 # 🛡️ NeonGuard
 
-**NeonGuard** es un sistema inteligente de monitoreo del sueño infantil que opera en dos modos:
-
-- 🌐 **Modo Internet:** Si hay Wi-Fi, los datos de la pulsera se consultan desde un servidor HTTP y WebSocket.
-- 📶 **Modo Local (AP):** Si no hay internet, el sistema activa un Access Point local que espera datos directamente por WebSocket.
-
-Este sistema permite registrar y visualizar en tiempo real los signos vitales de un infante, como el pulso, movimiento y nivel de oxigenación.
+**NeonGuard** es un sistema inteligente de monitoreo del sueño infantil que combina sensores de presión (FSR) y una pulsera biométrica para detectar signos vitales y anomalías durante el sueño. El sistema opera en tiempo real y cuenta con una interfaz web para visualizar la información y exportar reportes.
 
 ---
 
@@ -13,127 +8,141 @@ Este sistema permite registrar y visualizar en tiempo real los signos vitales de
 
 ```
 NeonGuard/
-├── NeonGuard.ino                 # Archivo principal, coordinación de tareas y sensores
-├── ForceSensor.h                 # Lectura de sensores FSR, análisis de sueño y anomalías
-├── WiFiManagerServer.h           # Manejo de conexión Wi-Fi y credenciales almacenadas
-├── InternetAPIServer.h           # Servidor WebSocket en modo Internet
-├── LocalPulseraReceiver.h        # Servidor WebSocket receptor de datos de la pulsera (modo AP)
-├── LedController.h               # Control del LED RGB según estado del sistema
-├── GlobalData.h / GlobalData.cpp # Variables compartidas entre módulos y configuración global
+├── Pulsera/                      # Código de la pulsera (ESP32-S3)
+│   ├── Pulsera.ino
+│   ├── SensorPulsera.h
+│   └── WiFiManagerPulsera.h
+
+├── NeonGuardServer/             # Código del servidor (ESP32 DevKit v1)
+│   ├── NeonGuardServer.ino
+│   ├── ForceSensor.h
+│   ├── LedController.h
+│   ├── InternetAPIServer.h      # WebSocket para interfaz web
+│   ├── LocalPulseraReceiver.h   # HTTP receptor desde la pulsera
+│   ├── WiFiManagerServer.h
+│   ├── GlobalData.h / .cpp
+
+├── app/                         # Interfaz web
+│   ├── index.html
+│   ├── main.js
+│   ├── styles.css
+│   └── img/ (Logos)
+
+└── README.md
 ```
 
 ---
 
-## 🧠 Características
+## 🧠 Funcionamiento General
 
-- ✅ Auto-conexión a redes Wi-Fi guardadas (WiFiManager)
-- 🔁 Cambio automático a red local si no hay internet
-- 💾 Borrado de credenciales manteniendo presionado un botón por 5 segundos
-- 📡 WebSocket bidireccional en modo Internet (consulta de estado y calibración)
-- 📲 WebSocket receptor dedicado para datos en modo AP (desde la pulsera)
-- 🛠️ Calibración remota desde la interfaz web con botón y feedback visual
+El sistema se compone de dos dispositivos:
+
+### 1️⃣ Pulsera ESP32-S3
+
+- Lee pulso y oxigenación usando sensor MAX30102
+- Se conecta a `neonguard.local`
+- Envía datos solo si **cambian** o si han pasado **5 segundos**
+- Usa **HTTP POST** hacia `http://neonguard.local:82/pulsera`
+- LED integrado se enciende cuando hay transmisión
+
+### 2️⃣ Servidor ESP32 (DevKit1)
+
+- Se conecta al Wi-Fi configurado
+- Activa dos servidores:
+  - 🛰 WebSocket (puerto 81) para interfaz web
+  - 🔌 HTTP (puerto 82) para recibir datos de la pulsera
+- Mide presión por sensores FSR
+- Calcula nivel de anomalía cada 200 ms
+- Expone todo el estado vía WebSocket
 
 ---
 
-## 🖼️ Logos
+## 🌐 Interfaz Web (app/)
 
-### Instituto Tecnológico Superior de Monclova
-
-![Logo Tec](./img/LogoTecNm.svg)
-
-### Proyecto NeonGuard
-
-![Logo NeonGuard](./img/neonguard.svg)
+- Muestra en tiempo real:
+  - 💓 BPM
+  - 🩸 SpO₂
+  - ⚠️ Nivel de anomalía (Normal, Leve, Moderado, Crítico)
+  - 📈 Gráfica en vivo
+  - 🟢 Estado de la pulsera
+- Permite:
+  - 🛠 Calibración remota
+  - 📤 Exportar histórico a Excel (últimos 5 segundos)
 
 ---
 
-## ⚙️ Requisitos
+## 📡 Modo de Comunicación
 
-- ESP32 DevKit v1
-- Arduino IDE 2.x o VSCode + PlatformIO
+| Dispositivo      | Medio    | Protocolo | Descripción                                 |
+| ---------------- | -------- | --------- | ------------------------------------------- |
+| Pulsera ESP32-S3 | Cliente  | HTTP      | Envía datos en JSON cada 1s o si hay cambio |
+| Servidor ESP32   | Servidor | WebSocket | Transmite datos a interfaz web (dashboard)  |
+| Interfaz Web     | Cliente  | WebSocket | Consulta cada 200 ms vía `getEstado`        |
+
+---
+
+## 🧪 Lógica de Anomalía
+
+### Parámetros considerados:
+
+| Criterio               | Condición                      | % Riesgo |
+| ---------------------- | ------------------------------ | -------- |
+| Movimiento brusco      | Δ presión > 180                | +15%     |
+| Inactividad prolongada | sin cambio > 5 ciclos (10s)    | +20%     |
+| Distribución anormal   | solo 1 sensor activo o todos 0 | +10–25%  |
+| BPM anormal            | < 50 o > 180                   | +25%     |
+| Oxigenación baja       | SpO₂ < 92%                     | +30%     |
+
+### Niveles interpretados
+
+| Porcentaje | Nivel de Riesgo | Descripción                                 |
+| ---------- | --------------- | ------------------------------------------- |
+| 0–25%      | 🟢 Normal       | Variaciones normales del sueño              |
+| 26–50%     | 🟡 Leve         | Incomodidad o inicio de irregularidad       |
+| 51–75%     | 🟠 Moderado     | Posible apnea leve o postura incorrecta     |
+| 76–100%    | 🔴 Crítico      | Apnea severa, paro respiratorio, caída, etc |
+
+---
+
+## 🛠 Calibración de Sábana Sensorial
+
+1. Asegúrate de que la sábana esté libre y sin presión
+2. Accede a la interfaz web
+3. Haz clic en "🛠 Calibrar"
+4. Espera a que el LED parpadee lentamente (🟦)
+5. Aparecerá el mensaje `✅ Calibración completada.`
+6. Coloca al infante y comienza el monitoreo
+
+---
+
+## 🧰 Requisitos Técnicos
+
+- 🔌 ESP32 DevKit v1 (Servidor)
+- 📲 ESP32-S3 (Pulsera)
+- ✅ Arduino IDE 2.x
 - Librerías necesarias:
   - `WiFiManager`
   - `WebSocketsServer`
-  - `Preferences`
   - `ArduinoJson`
+  - `Preferences`
+  - `HttpClient`
+  - `WebServer`
 
 ---
 
-## 🔧 Cómo usar
+## 🚀 Uso
 
-1. Sube el sketch `NeonGuard.ino` a tu ESP32.
-2. Si no hay Wi-Fi configurado, se crea una red llamada `NeonGuard_Config`.
-3. Ingresa desde tu celular o PC, y configura el Wi-Fi.
-4. Si el sistema no detecta internet después de 60 segundos, cambia automáticamente a modo local (Access Point).
-5. Para borrar las credenciales Wi-Fi, **mantén presionado el botón de reset durante 5 segundos**.
-
----
-
-## 🎯 Calibración de la sábana inteligente
-
-### 🧼 Paso a paso para calibrar correctamente:
-
-1. **Preparación:** Asegúrate de que la sábana esté completamente extendida, limpia y sin ningún objeto ni presión.
-2. **Encendido:** Conecta el ESP32 y espera a que se muestre la IP local en el monitor serie, por ejemplo: `📡 IP local: 192.168.1.108`
-3. **Accede al navegador:** En un dispositivo conectado a la misma red, entra a la interfaz web.
-4. **Haz clic en el botón "🛠️ Calibrar"**. El LED comenzará a parpadear lentamente 🟦 indicando que la calibración está en proceso.
-5. **Confirmación:** En pantalla aparecerá el mensaje: `✅ Calibración completada.`
-6. **Listo:** La sábana estará lista para usarse. Puedes ahora colocar al bebé y comenzar el monitoreo.
+1. Conecta ambos ESP32 vía USB
+2. Sube `Pulsera.ino` al ESP32-S3 y `NeonGuardServer.ino` al DevKit1
+3. Abre `app/index.html` en un navegador conectado a la misma red Wi-Fi
+4. Observa los datos en tiempo real
 
 ---
 
-## 📡 API - Modo Internet
+## 🧽 Reiniciar Configuración Wi-Fi
 
-- `GET /estado` o por WebSocket
-  Devuelve un JSON con el estado actual de la pulsera:
-
-```json
-{
-  "puls": 78,
-  "oxigenacion": 98,
-  "promedio": 40,
-  "anomalia": 45
-}
-```
-
----
-
-### 📊 Tabla de Predicción de Anomalías en NeonGuard
-
-| 💡 Criterio Evaluado                     | Condición Detectada                        | % Asignado | Explicación Técnica                                                    |
-| ---------------------------------------- | ------------------------------------------ | ---------- | ---------------------------------------------------------------------- |
-| 🔺 **Movimiento brusco** (FSR)           | Cambio súbito de presión > 180             | +15%       | Indicador de espasmos, sobresaltos, caídas o sueño agitado             |
-| 💤 **Inactividad prolongada** (FSR)      | Sin cambios de presión por 5 ciclos (~10s) | +20%       | Posible apnea, muerte de cuna o pérdida de conciencia                  |
-| ⚖️ **Distribución anormal** (FSR)        | Solo 1 sensor activo o todos en 0          | +10–25%    | Postura errática, abandono de cama o desconexión de sensores           |
-| ❤️ **Frecuencia cardíaca anormal** (BPM) | BPM < 50 o BPM > 180                       | +25%       | Bradicardia o taquicardia, riesgos de paro o crisis cardíaca           |
-| 🫁 **Oxigenación baja** (SpO₂)           | SpO₂ < 92%                                 | +30%       | Hipoxemia crítica; puede preceder eventos de apnea o paro respiratorio |
-
-### 🔢 Ejemplo de cálculo de anomalía
-
-| Parámetro             | Valor Detectado     | ¿Cumple Condición? | % Asignado |
-| --------------------- | ------------------- | ------------------ | ---------- |
-| Movimiento brusco     | Sensor 2 cambió 210 | ✅                 | 15%        |
-| Inactividad           | 5 ciclos sin cambio | ✅                 | 20%        |
-| Presión desbalanceada | Solo sensor 3 > 30  | ✅                 | 10%        |
-| BPM                   | 43 BPM              | ✅                 | 25%        |
-| SpO₂                  | 91%                 | ✅                 | 30%        |
-| **Total estimado**    |                     |                    | **100%**   |
-
-### 📘 Interpretación de puntuaciones
-
-| Porcentaje (%) | Nivel de riesgo | Posibles causas                                                    |
-| -------------- | --------------- | ------------------------------------------------------------------ |
-| 0–25%          | 🟢 Normal       | Variaciones naturales del sueño                                    |
-| 26–50%         | 🟡 Leve         | Movimiento leve o inicio de irregularidad                          |
-| 51–75%         | 🟠 Moderado     | Apnea leve, postura anómala, oxigenación baja moderada             |
-| 76–100%        | 🔴 Crítico      | Paro respiratorio, apnea severa, muerte súbita, caída, desconexión |
-
----
-
-## 🧪 Borrar credenciales manualmente
-
-- Puedes enviar `-1` por el monitor serial para reiniciar la configuración Wi-Fi.
-- O mantener presionado el botón de reinicio por **5 segundos** para restaurar ajustes de red.
+- En el monitor serial escribe `-1`
+- O mantén presionado el botón por 5 segundos
 
 ---
 

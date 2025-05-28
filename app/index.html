@@ -14,27 +14,34 @@
 			</div>
 			<img src="./img/logoTEC.svg" alt="NeonGuard Logo" class="header__logo-tec">
 	</header>
-
-	<div class="data">
-		<div class="data__metric">
-			❤️ BPM: <span id="bpm">0</span>
+	
+	<div class="container">
+		<div class="data">
+			<div class="data__metric">
+				❤️ BPM: <span id="bpm">0</span>
+			</div>
+			<div class="data__metric">
+				🩸 Saturación: <span id="spo2">0</span>%
+			</div>
+			<div class="data__metric">
+				📊 Anomalía: <span id="anomalia">0</span>% 
+				<span class="nivel" id="nivel">Normal</span>
+			</div>
 		</div>
-		<div class="data__metric">
-			🩸 Saturación: <span id="spo2">0</span>%
-		</div>
-		<div class="data__metric">
-			📊 Anomalía: <span id="anomalia">0</span>% 
-			<span class="nivel" id="nivel">Normal</span>
-		</div>
-	</div>
 
- 	<div class="controls">
-		<button id="btnCalibrar" class="controls__btn">Calibrar Sensores</button>
-		<div id="estadoCalibracion" class="controls__state">🔧 Esperando calibración...</div>
-	</div>
+		<div class="controls-container">
+			<div class="controls">
+				<button id="btnCalibrar" class="controls__btn">Calibrar Sensores</button>
+				<div id="estadoCalibracion" class="controls__state">🔧 Esperando calibración...</div>
+			</div>
+			<div id="estadoPulsera" class="desconectado">🔴 Pulsera desconectada</div>
+		</div>
 
-	<div class="grafica-container">
-		<canvas id="grafica"></canvas>
+		<div class="grafica-container">
+			<canvas id="grafica"></canvas>
+		</div>
+		
+		<button id="btnExportarExcel" class="controls__btn">📥 Exportar histórico a Excel</button>
 	</div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

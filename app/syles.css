@@ -3,7 +3,9 @@
   padding: 0;
   box-sizing: border-box;
   font-family: sans-serif;
+  user-select: none;
 }
+
 
 .header {
   width: 100%;
@@ -32,6 +34,15 @@
   height: 60px;
 }
 
+.container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+ margin: 0 auto;
+}
+
 .data {
   width: 100%;
   display: flex;
@@ -41,13 +52,20 @@
   margin-bottom: 40px;
 }
 
+.controls-container {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
 .controls {
   width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 20px;
-  margin-bottom: 40px;
+  margin: 10px 10px;
 }
 
 .controls__btn {
@@ -57,6 +75,18 @@
   border-radius: 5px;
   cursor: pointer;
   color: #fff;
+}
+
+.conectado {
+  width: 300px;
+  color: green;
+  font-weight: bold;
+}
+
+.desconectado {
+  width: 300px;
+  color: red;
+  font-weight: bold;
 }
 
 .grafica-container {
