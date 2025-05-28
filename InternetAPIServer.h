@@ -1,7 +1,7 @@
 #ifndef INTERNETAPISERVER_H
 #define INTERNETAPISERVER_H
 
-#include <WebServer.h>
+#include <WebSocketsServer.h>
 #include <ArduinoJson.h>
 #include "GlobalData.h"
 #include "ForceSensor.h"
@@ -10,55 +10,52 @@
 class InternetAPIServer {
 public:
   InternetAPIServer(ForceSensor& sensorRef, LedController& ledRef)
-    : sensor(sensorRef), led(ledRef) {}
+    : sensor(sensorRef), led(ledRef), webSocket(81) {}
 
   void iniciarServidor() {
-    server.on("/", HTTP_GET, [this]() {
-      StaticJsonDocument<128> doc;
-      doc["status"] = "\U0001F310 Servidor en línea. Usa /estado para obtener datos..";
-      doc["ip_local"] = ipLocal;
-      doc["ip_gateway"] = ipGateway;
+    webSocket.begin();
+    webSocket.onEvent([this](uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
+      if (type == WStype_TEXT) {
+        String mensaje = String((char*)payload);
+        
+        if (mensaje == "getEstado") {
+          enviarEstado(num);
+        } else if (mensaje == "calibrar") {
+          led.parpadeoLento();
+          sensor.calibrate(100, 10);
 
-      String jsonResponse;
-      serializeJson(doc, jsonResponse);
-      server.send(200, "application/json", jsonResponse);
+          StaticJsonDocument<64> resp;
+          resp["status"] = "✅ Calibración completada.";
+          String json;
+          serializeJson(resp, json);
+          webSocket.sendTXT(num, json);
+        }
+      }
     });
 
-    server.on("/estado", HTTP_GET, [this]() {
-      StaticJsonDocument<128> doc;
-      doc["puls"] = puls;
-      doc["oxigenacion"] = oxigenacion;
-      doc["promedio"] = promedio;
-      doc["anomalia"] = anomalia;
-
-      String jsonResponse;
-      serializeJson(doc, jsonResponse);
-      server.send(200, "application/json", jsonResponse);
-    });
-
-    server.on("/calibrar", HTTP_GET, [this]() {
-      led.parpadeoLento();
-      sensor.calibrate();
-
-      StaticJsonDocument<128> doc;
-      doc["status"] = "✅ Calibración iniciada correctamente.";
-      String jsonResponse;
-      serializeJson(doc, jsonResponse);
-      server.send(200, "application/json", jsonResponse);
-    });
-
-    server.begin();
-    Serial.println("🚀 Servidor HTTP (modo Internet) iniciado en /estado");
+    Serial.println("📡 WebSocket iniciado en puerto 81");
   }
 
   void escuchar() {
-    server.handleClient();
+    webSocket.loop();
   }
 
 private:
-  WebServer server = WebServer(80);
+  WebSocketsServer webSocket;
   ForceSensor& sensor;
   LedController& led;
+
+  void enviarEstado(uint8_t clientID) {
+    StaticJsonDocument<128> doc;
+    doc["puls"] = puls;
+    doc["oxigenacion"] = oxigenacion;
+    doc["promedio"] = promedio;
+    doc["anomalia"] = anomalia;
+
+    String json;
+    serializeJson(doc, json);
+    webSocket.sendTXT(clientID, json);
+  }
 };
 
 #endif

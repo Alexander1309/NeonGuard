@@ -1,10 +1,10 @@
-#include "HardwareSerial.h"
 #ifndef WIFIMANAGERSERVER_H
 #define WIFIMANAGERSERVER_H
 
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include <Preferences.h>
+#include <ESPmDNS.h>  // 👈 Agregado para soporte mDNS
 
 #define SSID_APT "NeonGuard_Config"
 #define PASS_APT "12345678"
@@ -35,6 +35,15 @@ public:
     preferences.putString("ssid", WiFi.SSID());
     preferences.putString("pass", WiFi.psk());
     preferences.end();
+
+    // 🔹 Iniciar mDNS
+    if (!MDNS.begin("neonguard")) {
+      Serial.println("❌ Error al iniciar mDNS");
+    } else {
+      Serial.println("✅ mDNS iniciado: http://neonguard.local");
+      MDNS.addService("http", "tcp", 80);
+      MDNS.addService("ws", "tcp", 81);
+    }
   }
 
   void mostrarCredencialesGuardadas() {
