@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="syles.css">
+	<title>NeonGuard</title>
+</head>
+<body>
+	<header class="header">
+			<div class="header__container">
+				<img src="./img/logo.png" alt="NeonGuard Logo" class="header__logo">
+				<h1 class="header__title">NeonGuard</h1>
+			</div>
+			<img src="./img/logoTEC.svg" alt="NeonGuard Logo" class="header__logo-tec">
+	</header>
+
+	<div class="data">
+		<div class="data__metric">
+			❤️ BPM: <span id="bpm">0</span>
+		</div>
+		<div class="data__metric">
+			🩸 Saturación: <span id="spo2">0</span>%
+		</div>
+		<div class="data__metric">
+			📊 Anomalía: <span id="anomalia">0</span>% 
+			<span class="nivel" id="nivel">Normal</span>
+		</div>
+	</div>
+
+ 	<div class="controls">
+		<button id="btnCalibrar" class="controls__btn">Calibrar Sensores</button>
+		<div id="estadoCalibracion" class="controls__state">🔧 Esperando calibración...</div>
+	</div>
+
+	<div class="grafica-container">
+		<canvas id="grafica"></canvas>
+	</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="./main.js"></script>
+</body>
+</html>

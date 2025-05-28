@@ -2,8 +2,8 @@
 
 **NeonGuard** es un sistema inteligente de monitoreo del sueño infantil que opera en dos modos:
 
-- 🌐 **Modo Internet:** Si hay Wi-Fi, los datos de la pulsera se consultan desde un servidor HTTP.
-- 📶 **Modo Local (AP):** Si no hay internet, el sistema activa un Access Point local que espera datos directamente.
+- 🌐 **Modo Internet:** Si hay Wi-Fi, los datos de la pulsera se consultan desde un servidor HTTP y WebSocket.
+- 📶 **Modo Local (AP):** Si no hay internet, el sistema activa un Access Point local que espera datos directamente por WebSocket.
 
 Este sistema permite registrar y visualizar en tiempo real los signos vitales de un infante, como el pulso, movimiento y nivel de oxigenación.
 
@@ -13,12 +13,12 @@ Este sistema permite registrar y visualizar en tiempo real los signos vitales de
 
 ```
 NeonGuard/
-├── NeonGuard.ino               # Archivo principal, coordinación de tareas y sensores
-├── ForceSensor.h               # Lectura de sensores FSR, análisis de sueño y anomalías
-├── WiFiManagerServer.h         # Manejo de conexión Wi-Fi y credenciales almacenadas
-├── InternetAPIServer.h         # Servidor HTTP en modo conectado a Internet
-├── LocalAPReceiver.h           # Servidor local (Access Point) para modo sin red externa
-├── LedController.h             # Control del LED RGB según estado del sistema
+├── NeonGuard.ino                 # Archivo principal, coordinación de tareas y sensores
+├── ForceSensor.h                 # Lectura de sensores FSR, análisis de sueño y anomalías
+├── WiFiManagerServer.h           # Manejo de conexión Wi-Fi y credenciales almacenadas
+├── InternetAPIServer.h           # Servidor WebSocket en modo Internet
+├── LocalPulseraReceiver.h        # Servidor WebSocket receptor de datos de la pulsera (modo AP)
+├── LedController.h               # Control del LED RGB según estado del sistema
 ├── GlobalData.h / GlobalData.cpp # Variables compartidas entre módulos y configuración global
 ```
 
@@ -29,9 +29,9 @@ NeonGuard/
 - ✅ Auto-conexión a redes Wi-Fi guardadas (WiFiManager)
 - 🔁 Cambio automático a red local si no hay internet
 - 💾 Borrado de credenciales manteniendo presionado un botón por 5 segundos
-- 🧪 Recepción de datos vía POST JSON en modo AP
-- 🌐 API REST disponible vía `/estado`
-- 🛠️ Calibración remota vía `/calibrar` con feedback visual
+- 📡 WebSocket bidireccional en modo Internet (consulta de estado y calibración)
+- 📲 WebSocket receptor dedicado para datos en modo AP (desde la pulsera)
+- 🛠️ Calibración remota desde la interfaz web con botón y feedback visual
 
 ---
 
@@ -53,7 +53,7 @@ NeonGuard/
 - Arduino IDE 2.x o VSCode + PlatformIO
 - Librerías necesarias:
   - `WiFiManager`
-  - `WebServer`
+  - `WebSocketsServer`
   - `Preferences`
   - `ArduinoJson`
 
@@ -75,29 +75,16 @@ NeonGuard/
 
 1. **Preparación:** Asegúrate de que la sábana esté completamente extendida, limpia y sin ningún objeto ni presión.
 2. **Encendido:** Conecta el ESP32 y espera a que se muestre la IP local en el monitor serie, por ejemplo: `📡 IP local: 192.168.1.108`
-3. **Accede al navegador:** En un dispositivo conectado a la misma red, entra a:
-
-   ```
-   http://<IP_DEL_ESP32>/calibrar
-   ```
-   Ejemplo: `http://192.168.1.108/calibrar`
-
-4. **Efecto visual:** El LED comenzará a parpadear lentamente 🟦 indicando que la calibración está en proceso.
-5. **Confirmación:** Verás en el navegador la respuesta:
-
-   ```json
-   {
-     "status": "✅ Calibración iniciada correctamente."
-   }
-   ```
-
+3. **Accede al navegador:** En un dispositivo conectado a la misma red, entra a la interfaz web.
+4. **Haz clic en el botón "🛠️ Calibrar"**. El LED comenzará a parpadear lentamente 🟦 indicando que la calibración está en proceso.
+5. **Confirmación:** En pantalla aparecerá el mensaje: `✅ Calibración completada.`
 6. **Listo:** La sábana estará lista para usarse. Puedes ahora colocar al bebé y comenzar el monitoreo.
 
 ---
 
 ## 📡 API - Modo Internet
 
-- `GET /estado`  
+- `GET /estado` o por WebSocket
   Devuelve un JSON con el estado actual de la pulsera:
 
 ```json
@@ -113,33 +100,33 @@ NeonGuard/
 
 ### 📊 Tabla de Predicción de Anomalías en NeonGuard
 
-| 💡 Criterio Evaluado                       | Condición Detectada                             | % Asignado | Explicación Técnica                                                                 |
-|-------------------------------------------|--------------------------------------------------|------------|--------------------------------------------------------------------------------------|
-| 🔺 **Movimiento brusco** (FSR)            | Cambio súbito de presión > 180                   | +15%       | Indicador de espasmos, sobresaltos, caídas o sueño agitado                           |
-| 💤 **Inactividad prolongada** (FSR)       | Sin cambios de presión por 5 ciclos (~10s)       | +20%       | Posible apnea, muerte de cuna o pérdida de conciencia                               |
-| ⚖️ **Distribución anormal** (FSR)        | Solo 1 sensor activo o todos en 0                | +10–25%    | Postura errática, abandono de cama o desconexión de sensores                        |
-| ❤️ **Frecuencia cardíaca anormal** (BPM) | BPM < 50 o BPM > 180                             | +25%       | Bradicardia o taquicardia, riesgos de paro o crisis cardíaca                        |
-| 🫁 **Oxigenación baja** (SpO₂)           | SpO₂ < 92%                                       | +30%       | Hipoxemia crítica; puede preceder eventos de apnea o paro respiratorio              |
+| 💡 Criterio Evaluado                     | Condición Detectada                        | % Asignado | Explicación Técnica                                                    |
+| ---------------------------------------- | ------------------------------------------ | ---------- | ---------------------------------------------------------------------- |
+| 🔺 **Movimiento brusco** (FSR)           | Cambio súbito de presión > 180             | +15%       | Indicador de espasmos, sobresaltos, caídas o sueño agitado             |
+| 💤 **Inactividad prolongada** (FSR)      | Sin cambios de presión por 5 ciclos (~10s) | +20%       | Posible apnea, muerte de cuna o pérdida de conciencia                  |
+| ⚖️ **Distribución anormal** (FSR)        | Solo 1 sensor activo o todos en 0          | +10–25%    | Postura errática, abandono de cama o desconexión de sensores           |
+| ❤️ **Frecuencia cardíaca anormal** (BPM) | BPM < 50 o BPM > 180                       | +25%       | Bradicardia o taquicardia, riesgos de paro o crisis cardíaca           |
+| 🫁 **Oxigenación baja** (SpO₂)           | SpO₂ < 92%                                 | +30%       | Hipoxemia crítica; puede preceder eventos de apnea o paro respiratorio |
 
 ### 🔢 Ejemplo de cálculo de anomalía
 
-| Parámetro              | Valor Detectado     | ¿Cumple Condición? | % Asignado |
-|------------------------|----------------------|---------------------|-------------|
-| Movimiento brusco      | Sensor 2 cambió 210  | ✅                  | 15%         |
-| Inactividad            | 5 ciclos sin cambio  | ✅                  | 20%         |
-| Presión desbalanceada  | Solo sensor 3 > 30   | ✅                  | 10%         |
-| BPM                    | 43 BPM               | ✅                  | 25%         |
-| SpO₂                   | 91%                  | ✅                  | 30%         |
-| **Total estimado**     |                      |                     | **100%**    |
+| Parámetro             | Valor Detectado     | ¿Cumple Condición? | % Asignado |
+| --------------------- | ------------------- | ------------------ | ---------- |
+| Movimiento brusco     | Sensor 2 cambió 210 | ✅                 | 15%        |
+| Inactividad           | 5 ciclos sin cambio | ✅                 | 20%        |
+| Presión desbalanceada | Solo sensor 3 > 30  | ✅                 | 10%        |
+| BPM                   | 43 BPM              | ✅                 | 25%        |
+| SpO₂                  | 91%                 | ✅                 | 30%        |
+| **Total estimado**    |                     |                    | **100%**   |
 
 ### 📘 Interpretación de puntuaciones
 
-| Porcentaje (%) | Nivel de riesgo              | Posibles causas                                                   |
-|----------------|------------------------------|--------------------------------------------------------------------|
-| 0–25%          | 🟢 Normal                    | Variaciones naturales del sueño                                   |
-| 26–50%         | 🟡 Leve                      | Movimiento leve o inicio de irregularidad                         |
-| 51–75%         | 🟠 Moderado                  | Apnea leve, postura anómala, oxigenación baja moderada            |
-| 76–100%        | 🔴 Crítico                   | Paro respiratorio, apnea severa, muerte súbita, caída, desconexión |
+| Porcentaje (%) | Nivel de riesgo | Posibles causas                                                    |
+| -------------- | --------------- | ------------------------------------------------------------------ |
+| 0–25%          | 🟢 Normal       | Variaciones naturales del sueño                                    |
+| 26–50%         | 🟡 Leve         | Movimiento leve o inicio de irregularidad                          |
+| 51–75%         | 🟠 Moderado     | Apnea leve, postura anómala, oxigenación baja moderada             |
+| 76–100%        | 🔴 Crítico      | Paro respiratorio, apnea severa, muerte súbita, caída, desconexión |
 
 ---
 
