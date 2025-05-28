@@ -75,7 +75,7 @@ El sistema se compone de dos dispositivos:
 
 | Dispositivo      | Medio    | Protocolo | Descripción                                 |
 | ---------------- | -------- | --------- | ------------------------------------------- |
-| Pulsera ESP32-S3 | Cliente  | HTTP      | Envía datos en JSON cada 1s o si hay cambio |
+| Pulsera ESP32-S3 | Cliente  | HTTP      | Envía datos en JSON cada 5s o si hay cambio |
 | Servidor ESP32   | Servidor | WebSocket | Transmite datos a interfaz web (dashboard)  |
 | Interfaz Web     | Cliente  | WebSocket | Consulta cada 200 ms vía `getEstado`        |
 
